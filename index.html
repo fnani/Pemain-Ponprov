@@ -8,8 +8,22 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- SheetJS (xlsx) untuk Export & Import Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(1rem); }
+            15% { opacity: 1; transform: translateY(0); }
+            85% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(1rem); }
+        }
+        .toast-animate {
+            animation: fadeInOut 3.5s ease-in-out forwards;
+        }
+    </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-3 md:p-8 font-sans antialiased selection:bg-emerald-500 selection:text-slate-950">
+
+    <!-- Toast Notification Floating -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
 
     <div class="max-w-7xl mx-auto space-y-6">
         <!-- Header & Search -->
@@ -44,7 +58,13 @@
 
         <!-- Tabel Konten -->
         <div id="table-container" class="space-y-6">
-            <p class="text-center text-slate-500 text-sm py-12" id="loading-text">Menghubungkan ke Firebase...</p>
+            <div id="loading-spinner" class="flex flex-col items-center justify-center py-16 space-y-3">
+                <svg class="animate-spin h-8 w-8 text-emerald-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="text-xs text-slate-400 font-medium">Menghubungkan ke Real-time Firebase...</p>
+            </div>
         </div>
     </div>
 
@@ -112,7 +132,9 @@
                     </button>
                     <div class="flex gap-2 ml-auto">
                         <button type="button" onclick="closeModal()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-medium">Batal</button>
-                        <button type="submit" id="btn-save" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold rounded-xl shadow-md">Simpan</button>
+                        <button type="submit" id="btn-save" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold rounded-xl shadow-md flex items-center gap-2">
+                            <span id="btn-save-text">Simpan</span>
+                        </button>
                     </div>
                 </div>
             </form>
@@ -122,7 +144,7 @@
     <!-- Script Firebase & Logika Aplikasi -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBcJlrKRDxd7pqOk_SDra89cGdvPCFtiu4",
@@ -140,23 +162,41 @@
         let allPlayers = [];
         let currentEditingId = null;
 
+        // Fungsi Toast Notifikasi
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgColor = type === 'success' ? 'bg-emerald-600 text-slate-950' : 'bg-rose-600 text-white';
+            const icon = type === 'success' 
+                ? `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`
+                : `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>`;
+
+            toast.className = `flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-xs shadow-2xl pointer-events-auto toast-animate ${bgColor}`;
+            toast.innerHTML = `${icon}<span>${message}</span>`;
+            
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 3600);
+        }
+
         window.onload = function() {
-            loadPlayers();
+            initRealtimeListener();
         };
 
-        async function loadPlayers() {
-            document.getElementById('loading-text').innerText = "Memuat data dari Firebase...";
-            try {
-                const querySnapshot = await getDocs(collection(db, "players"));
+        // Menggunakan onSnapshot untuk sync real-time instan
+        function initRealtimeListener() {
+            onSnapshot(collection(db, "players"), (snapshot) => {
                 allPlayers = [];
-                querySnapshot.forEach((docSnap) => {
+                snapshot.forEach((docSnap) => {
                     allPlayers.push({ id: docSnap.id, ...docSnap.data() });
                 });
                 renderTables(allPlayers);
-            } catch (error) {
-                console.error("Error loading data: ", error);
-                document.getElementById('loading-text').innerText = "Gagal memuat data. Periksa aturan Firebase rules.";
-            }
+            }, (error) => {
+                console.error("Realtime Error:", error);
+                showToast("Gagal terhubung ke database!", "error");
+            });
         }
 
         function renderTables(data) {
@@ -232,7 +272,7 @@
         // Fitur Export ke Excel
         window.exportToExcel = function() {
             if (allPlayers.length === 0) {
-                alert("Tidak ada data untuk diexport!");
+                showToast("Tidak ada data untuk diexport!", "error");
                 return;
             }
             let dataExport = allPlayers.map((p, idx) => ({
@@ -251,6 +291,7 @@
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Data Pemain Lolos");
             XLSX.writeFile(workbook, "Data_Pemain_Ponprov_Kab_Kediri.xlsx");
+            showToast("Berhasil mengeksport file Excel!");
         };
 
         // Fitur Import dari Excel ke Firebase
@@ -268,7 +309,7 @@
                     const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
                     if (jsonData.length === 0) {
-                        alert("File Excel kosong atau format tidak sesuai!");
+                        showToast("File Excel kosong!", "error");
                         return;
                     }
 
@@ -277,10 +318,7 @@
                         return;
                     }
 
-                    document.getElementById('loading-text').innerText = "Mengimpor data ke Firebase...";
-
                     for (let row of jsonData) {
-                        // Sesuaikan dengan nama kolom di Excel Anda
                         let playerObj = {
                             name: row["Nama"] || row["nama"] || row["NAME"] || "Tanpa Nama",
                             ttl: row["TTL"] || row["ttl"] || "-",
@@ -294,12 +332,11 @@
                         await addDoc(collection(db, "players"), playerObj);
                     }
 
-                    alert("Berhasil mengimpor data dari Excel ke Firebase!");
+                    showToast(`Berhasil mengimpor ${jsonData.length} data dari Excel!`);
                     event.target.value = '';
-                    loadPlayers();
                 } catch (error) {
                     console.error("Gagal import excel:", error);
-                    alert("Terjadi kesalahan saat membaca file Excel.");
+                    showToast("Terjadi kesalahan saat import Excel", "error");
                     event.target.value = '';
                 }
             };
@@ -341,7 +378,9 @@
         window.handleFormSubmit = async function(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-save');
-            btn.innerText = "Menyimpan...";
+            const btnText = document.getElementById('btn-save-text');
+            
+            btnText.innerText = "Menyimpan...";
             btn.disabled = true;
 
             const playerData = {
@@ -358,16 +397,17 @@
             try {
                 if (currentEditingId) {
                     await updateDoc(doc(db, "players", currentEditingId), playerData);
+                    showToast("Data pemain berhasil diperbarui!");
                 } else {
                     await addDoc(collection(db, "players"), playerData);
+                    showToast("Pemain baru berhasil ditambahkan!");
                 }
                 closeModal();
-                loadPlayers();
             } catch (error) {
                 console.error("Error saving:", error);
-                alert("Gagal menyimpan data.");
+                showToast("Gagal menyimpan data!", "error");
             } finally {
-                btn.innerText = "Simpan";
+                btnText.innerText = "Simpan";
                 btn.disabled = false;
             }
         }
@@ -376,11 +416,11 @@
             if (currentEditingId && confirm("Yakin ingin menghapus pemain ini dari database?")) {
                 try {
                     await deleteDoc(doc(db, "players", currentEditingId));
+                    showToast("Pemain berhasil dihapus dari database!");
                     closeModal();
-                    loadPlayers();
                 } catch (error) {
                     console.error("Error deleting:", error);
-                    alert("Gagal menghapus data.");
+                    showToast("Gagal menghapus data!", "error");
                 }
             }
         }
