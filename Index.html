@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pemain Lolos Seleksi - Ponprov Kab Kediri 2026</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-3 md:p-8 font-sans antialiased selection:bg-emerald-500 selection:text-slate-950">
+
+    <div class="max-w-7xl mx-auto space-y-6">
+        <!-- Header & Search -->
+        <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl">
+            <div>
+                <h1 class="text-base md:text-xl font-bold text-slate-100">Pemain Lolos Seleksi - Ponprov Kab Kediri 2026</h1>
+                <p class="text-xs text-slate-400">Database Real-time Firebase Firestore</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+                <input type="text" id="search-input" oninput="filterData()" placeholder="Cari nama atau sekolah..." class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 w-full md:w-56 placeholder-slate-600">
+                <!-- Tombol Inject Data Otomatis -->
+                <button onclick="injectInitialData()" id="btn-inject" class="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded-xl text-xs transition shadow-md shadow-amber-900/40 shrink-0 hidden">
+                    🚀 Inject 46 Data Awal
+                </button>
+                <button onclick="openModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold rounded-xl text-xs transition shadow-md shadow-emerald-900/40 shrink-0 flex items-center justify-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    <span>Tambah Pemain</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabel Konten -->
+        <div id="table-container" class="space-y-6">
+            <p class="text-center text-slate-500 text-sm py-12" id="loading-text">Menghubungkan ke Firebase...</p>
+        </div>
+    </div>
+
+    <!-- Modal Form Edit / Tambah (Pop-up) -->
+    <div id="modal-form" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 md:p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-5 md:p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-base text-slate-100" id="modal-title">Edit Data Pemain</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-200 font-bold text-xl p-1">&times;</button>
+            </div>
+            <form id="player-form" onsubmit="handleFormSubmit(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="form-id">
+                
+                <div>
+                    <label class="block text-slate-400 mb-1 font-medium">Nama Pemain</label>
+                    <input type="text" id="form-name" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-emerald-500 text-sm">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-400 mb-1 font-medium">Posisi</label>
+                        <select id="form-position" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-emerald-500">
+                            <option value="GK">GK (Kiper)</option>
+                            <option value="Anchor">Anchor</option>
+                            <option value="Flank">Flank</option>
+                            <option value="Pivot">Pivot</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1 font-medium">Strongest Foot</label>
+                        <select id="form-foot" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-emerald-500">
+                            <option value="Right">Right</option>
+                            <option value="Left">Left</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-400 mb-1 font-medium">Asal Sekolah</label>
+                        <input type="text" id="form-school" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1 font-medium">No. HP</label>
+                        <input type="text" id="form-phone" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-emerald-500 font-mono">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-slate-400 mb-1 font-medium">TTL</label>
+                        <input type="text" id="form-ttl" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1 font-medium">Klub</label>
+                        <input type="text" id="form-club" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1 font-medium">Domisili</label>
+                        <input type="text" id="form-domisili" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-emerald-500" value="Kab. Kediri">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-3 border-t border-slate-800">
+                    <button type="button" id="btn-delete-modal" onclick="deletePlayerFromModal()" class="hidden px-3.5 py-2.5 bg-rose-950/40 border border-rose-900/60 hover:bg-rose-900/50 text-rose-300 rounded-xl font-bold flex items-center gap-1.5 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        <span>Hapus Data</span>
+                    </button>
+                    <div class="flex gap-2 ml-auto">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-medium">Batal</button>
+                        <button type="submit" id="btn-save" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold rounded-xl shadow-md">Simpan</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script Firebase & Logika Aplikasi -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBcJlrKRDxd7pqOk_SDra89cGdvPCFtiu4",
+            authDomain: "futsal-ponprov-kediri.firebaseapp.com",
+            projectId: "futsal-ponprov-kediri",
+            storageBucket: "futsal-ponprov-kediri.firebasestorage.app",
+            messagingSenderId: "121808624921",
+            appId: "1:121808624921:web:ea5597c1b9aad7fb51b988",
+            measurementId: "G-229GSY523Z"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let allPlayers = [];
+        let currentEditingId = null;
+
+        // Dataset lengkap 46 pemain (15 Teks + 31 Excel)
+        const initialDataset = [
+            { name: "Ferdinan Abimayu", ttl: "-", school: "Kab. Kediri", phone: "0858-5920-4642", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Anchor" },
+            { name: "Ilham Maulana Ghifari", ttl: "-", school: "Kab. Kediri", phone: "0821-3906-3498", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Anchor" },
+            { name: "Tanjak Riski Wibowo", ttl: "-", school: "Kab. Kediri", phone: "0881-0367-26252", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
+            { name: "Muhtarom Fahri Fahrozi", ttl: "-", school: "Kab. Kediri", phone: "0821-7240-2940", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
+            { name: "Deo Galang Wira Kusma", ttl: "-", school: "Kab. Kediri", phone: "0857-3073-4995", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
+            { name: "Isshafa Rizki Darmawan", ttl: "-", school: "Kab. Kediri", phone: "0813-8781-6585", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
+            { name: "Fadil Ardiansyah Trigusma", ttl: "-", school: "Kab. Kediri", phone: "0812-3581-3911", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
+            { name: "Mahendra Ferdi Zafi", ttl: "-", school: "Kab. Kediri", phone: "0819-3980-3196", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
+            { name: "M. Iqbal Maulana", ttl: "-", school: "Kab. Kediri", phone: "0813-3567-0685", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
+            { name: "Josep Rahmat S.", ttl: "-", school: "Kab. Kediri", phone: "0878-3268-2966", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
+            { name: "Maulana Galih Ibrahim", ttl: "-", school: "Kab. Kediri", phone: "0856-5583-6202", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Pivot" },
+            { name: "Sultan Zaky", ttl: "-", school: "Kab. Kediri", phone: "0851-3600-6841", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Pivot" },
+            { name: "Krisna Agung W", ttl: "-", school: "Kab. Kediri", phone: "0857-5540-2710", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "GK" },
+            { name: "Keyta Alkausar", ttl: "-", school: "Kab. Kediri", phone: "0812-1645-9272", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "GK" },
+            { name: "Azka Rizqiansyah Hidayat", ttl: "-", school: "Kab. Kediri", phone: "0813-3058-082", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "GK" },
+            { name: "ZADA JANUAR PUTRA", ttl: "-", school: "SMKN 1 NGASEM", phone: "087830090638", foot: "Right", club: "Joker SM", domisili: "Kab. Kediri", position: "Flank" },
+            { name: "ADIKA DINARTHA CAKRANEGARA", ttl: "-", school: "SMAN 1 PARE", phone: "082337120300", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Pivot" },
+            { name: "WIJDAAN ABIYASA SATYA NAGARA", ttl: "-", school: "MAN 4 KEDIRI", phone: "085731254164", foot: "Right", club: "Joker", domisili: "Kab. Kediri", position: "Anchor" },
+            { name: "MUHAMMAD NUR HASAN", ttl: "-", school: "SMAN 1 NGASEM", phone: "085708077563", foot: "Right", club: "Seventeen", domisili: "Kab. Kediri", position: "Flank" },
+            { name: "MUHAMMAD ADLY RAMADAN", ttl: "-", school: "MTS NEGERI 1 KEDIRI", phone: "082333477873", foot: "Right", club: ".", domisili: "Kab. Kediri", position: "Anchor" },
+            { name: "VASANTA KUSUMAKARA", ttl: "-", school: "SMAN 1 PAPAR", phone: "083151065298", foot: "Left", club: "-", domisili: "Kab. Kediri", position: "Flank" },
+            { name: "SATRIA AGHA HAMIZAN IFTIKHAR", ttl: "-", school: "SMAN 1 PARE", phone: "085857585739", foot: "Right", club: "RD FARM FC", domisili: "Kab. Kediri", position: "GK" },
+            { name: "Alfathan Julio Putra Wahyudi", ttl: "-", school: "SMAN 1 PARE", phone: "0881036483488", foot: "Right", club: "RD Farm", domisili: "Kab. Kediri", position: "Pivot" },
+            { name: "Fawwas Akbar Azaidan", ttl: "-", school: "SMAN 1 GURAH", phone: "082115843263", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Pivot" },
+            { name: "Muhammad dafif daris", ttl: "-", school: "-", phone: "082139036699", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "GK" },
+            { name: "GASTONI VIKYAN WIDA SAPUTRA", ttl: "-", school: "SMAN 1 NGADILUWIH", phone: "085123736141", foot: "Right", club: "SEVENTIN", domisili: "Kab. Kediri", position: "Flank" },
+            { name: "Bagaswara laksana prabu", ttl: "-", school: "Sman1ngadiluwih", phone: "085852843525", foot: "Right", club: "Seventeen", domisili: "Kab. Kediri", position: "Pivot" },
+            { name: "MUHAMMAD BADRUDIN", ttl: "-", school: "SMAN 1 PLEMAHAN", phone: "085707361049", foot: "Right", club: "BBB FA", domisili: "Kab. Kediri", position: "Flank" },
+            { name: "ARSAVIN ANDRA PRATAMA", ttl: "-", school: "SMA NEGERI 1 PLEMAHAN", phone: "085707166012", foot: "Right", club: "Volcanoes", domisili: "Kab. Kediri", position: "GK" },
+            { name: "MUHAMMAD AZZAKY KEISHA PRATAMA", ttl: "-", school: "SMPN 1 GROGOL", phone: "085649759598", foot: "Right", club: "Sedulu FA", domisili: "Kab. Kediri", position: "Anchor" },
+            { name: "RAEHAN OKTA SAPUTRA", ttl: "-", school: "SMAN 6 KOTA KEDIRI", phone: "085770733563", foot: "Right", club: "Anak Manis", domisili: "Kab. Kediri", position: "Flank" },
+            { name: "ALVINO", ttl: "-", school: "SMA NEGRI 1 PAPAR", phone: "081548725910", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
+            { name: "DIMAS SATRIA WINATA", ttl: "-", school: "SMA NEGERI 1 GURAH", phone: "082231124792", foot: "Right", club: "Anak Manis", domisili: "Kab. Kediri", position: "Anchor" },
+            { name: "ALDI WAHYU SAPUTRA", ttl: "-", school: "MAN4KEDIRI", phone: "085746486351", foot: "Right", club: "PARAMONY", domisili: "Kab. Kediri", position: "Pivot" },
+            { name: "HAIKAL ALIF FIRMANSYAH", ttl: "-", school: "SMAN 1 PLEMAHAN", phone: "085856545632", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
+            { name: "Josheep Valentino Kurnia Putra Ngara", ttl: "-", school: "SMAN 1 GURAH", phone: "087849707769", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
+            { name: "Syafi' sadidaturrahman", ttl: "-", school: "SMA 1 PARE", phone: "087849707769", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Pivot" },
+            { name: "WAHYUISA TRYSANCA", ttl: "-", school: "SMAN 6 KEDIRI", phone: "085236711173", foot: "Right", club: "Joker Sm", domisili: "Kab. Kediri", position: "Anchor" },
+            { name: "BAIHAQI KHAIZAN", ttl: "-", school: "SMAN 1 PARE", phone: "082143360411", foot: "Right", club: "PARAMONY FA", domisili: "Kab. Kediri", position: "Anchor" },
+            { name: "Muhammad Syaifun Nadif", ttl: "-", school: "SMAN 1 SRENGAT", phone: "08133057504", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
+            { name: "radhitya agastha putra arandri", ttl: "-", school: "sman 1 pare", phone: "082245806151", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Anchor" },
+            { name: "MUHAMMAD ILMAN ZUHRI ZULQARNAIN", ttl: "-", school: "MAN 4 KEDIRI", phone: "085790656812", foot: "Right", club: "payung", domisili: "Kab. Kediri", position: "Pivot" },
+            { name: "RAKA BAGAS PAKUSADEWA", ttl: "-", school: "SMA NEGERI 1 PARE", phone: "085707281107", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
+            { name: "AHMAD DICKY ERFIANDI", ttl: "-", school: "SMAN 1 GURAH", phone: "085850168875", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Anchor" },
+            { name: "Muhammad Ridwan", ttl: "-", school: "SMAN 1 GURAH", phone: "085730030972", foot: "Right", club: "Payung", domisili: "Kab. Kediri", position: "Flank" },
+            { name: "Aufa Denis", ttl: "-", school: "-", phone: "088991792467", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Pivot" }
+        ];
+
+        window.onload = function() {
+            loadPlayers();
+        };
+
+        async function loadPlayers() {
+            document.getElementById('loading-text').innerText = "Memuat data dari Firebase...";
+            try {
+                const querySnapshot = await getDocs(collection(db, "players"));
+                allPlayers = [];
+                querySnapshot.forEach((docSnap) => {
+                    allPlayers.push({ id: docSnap.id, ...docSnap.data() });
+                });
+
+                // Jika database kosong, tampilkan tombol inject
+                if (allPlayers.length === 0) {
+                    document.getElementById('btn-inject').classList.remove('hidden');
+                } else {
+                    document.getElementById('btn-inject').classList.add('hidden');
+                }
+
+                renderTables(allPlayers);
+            } catch (error) {
+                console.error("Error loading data: ", error);
+                document.getElementById('loading-text').innerText = "Gagal memuat data. Periksa koneksi internet / Firebase rules.";
+            }
+        }
+
+        // Fungsi Tombol Inject Data Otomatis ke Firestore
+        window.injectInitialData = async function() {
+            if (!confirm("Yakin ingin meng-inject 46 data awal ke Firebase Firestore?")) return;
+            const btn = document.getElementById('btn-inject');
+            btn.innerText = "Meng-inject...";
+            btn.disabled = true;
+
+            try {
+                for (let player of initialDataset) {
+                    await addDoc(collection(db, "players"), player);
+                }
+                alert("Berhasil meng-inject 46 data pemain ke Firebase!");
+                loadPlayers();
+            } catch (error) {
+                console.error("Error injecting data:", error);
+                alert("Gagal meng-inject data.");
+                btn.innerText = "🚀 Inject 46 Data Awal";
+                btn.disabled = false;
+            }
+        };
+
+        function renderTables(data) {
+            const container = document.getElementById('table-container');
+            container.innerHTML = '';
+
+            if (data.length === 0) {
+                container.innerHTML = `<p class="text-center text-slate-500 text-sm py-12">Belum ada data pemain. Klik tombol <b>"Inject 46 Data Awal"</b> di atas atau tambah manual.</p>`;
+                return;
+            }
+
+            const positions = [
+                { title: "Penjaga Gawang (GK)", key: "GK", badge: "bg-emerald-950 text-emerald-400 border-emerald-900" },
+                { title: "Anchor", key: "Anchor", badge: "bg-sky-950 text-sky-400 border-sky-900" },
+                { title: "Flank", key: "Flank", badge: "bg-amber-950 text-amber-400 border-amber-900" },
+                { title: "Pivot", key: "Pivot", badge: "bg-purple-950 text-purple-400 border-purple-900" }
+            ];
+
+            positions.forEach(pos => {
+                const filtered = data.filter(p => p.position === pos.key);
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl";
+
+                let rows = '';
+                filtered.forEach((p, i) => {
+                    rows += `
+                        <tr onclick="openModal('${p.id}')" class="hover:bg-slate-800/70 transition cursor-pointer border-b border-slate-800/60 text-xs">
+                            <td class="p-3.5 text-center text-slate-500 font-mono">${i + 1}</td>
+                            <td class="p-3.5 font-bold text-slate-100">${p.name}</td>
+                            <td class="p-3.5 text-slate-300 hidden sm:table-cell">${p.ttl || '-'}</td>
+                            <td class="p-3.5 text-slate-300">${p.school || '-'}</td>
+                            <td class="p-3.5 text-slate-400 font-mono hidden md:table-cell">${p.phone || '-'}</td>
+                            <td class="p-3.5 text-center font-bold text-slate-300 hidden md:table-cell">${p.foot || 'Right'}</td>
+                            <td class="p-3.5 text-slate-300 hidden lg:table-cell">${p.club || '-'}</td>
+                            <td class="p-3.5 text-slate-300 hidden sm:table-cell">${p.domisili || '-'}</td>
+                        </tr>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div class="bg-slate-950 px-5 py-3.5 border-b border-slate-800 flex justify-between items-center">
+                        <span class="px-3 py-1 rounded-xl text-xs font-bold border ${pos.badge}">${pos.title}</span>
+                        <span class="text-xs text-slate-400 font-mono">Total: ${filtered.length} Pemain</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead class="bg-slate-950/40 text-slate-400 uppercase font-bold text-[10px] border-b border-slate-800">
+                                <tr>
+                                    <th class="p-3.5 w-10 text-center">No</th>
+                                    <th class="p-3.5">Nama</th>
+                                    <th class="p-3.5 hidden sm:table-cell">TTL</th>
+                                    <th class="p-3.5">Asal Sekolah</th>
+                                    <th class="p-3.5 hidden md:table-cell">No. HP</th>
+                                    <th class="p-3.5 text-center hidden md:table-cell">Foot</th>
+                                    <th class="p-3.5 hidden lg:table-cell">Klub</th>
+                                    <th class="p-3.5 hidden sm:table-cell">Domisili</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows || '<tr><td colspan="8" class="p-4 text-center text-slate-500">Tidak ada pemain.</td></tr>'}</tbody>
+                        </table>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        window.filterData = function() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const filtered = allPlayers.filter(p => p.name.toLowerCase().includes(query) || p.school.toLowerCase().includes(query) || (p.domisili && p.domisili.toLowerCase().includes(query)));
+            renderTables(filtered);
+        }
+
+        window.openModal = function(id = null) {
+            document.getElementById('modal-form').classList.remove('hidden');
+            currentEditingId = id;
+            const btnDelete = document.getElementById('btn-delete-modal');
+
+            if (id) {
+                const player = allPlayers.find(p => p.id === id);
+                document.getElementById('modal-title').innerText = "Edit Data Pemain";
+                document.getElementById('form-id').value = player.id;
+                document.getElementById('form-name').value = player.name;
+                document.getElementById('form-position').value = player.position;
+                document.getElementById('form-foot').value = player.foot;
+                document.getElementById('form-school').value = player.school;
+                document.getElementById('form-phone').value = player.phone;
+                document.getElementById('form-ttl').value = player.ttl;
+                document.getElementById('form-club').value = player.club;
+                document.getElementById('form-domisili').value = player.domisili || 'Kab. Kediri';
+                btnDelete.classList.remove('hidden');
+            } else {
+                document.getElementById('modal-title').innerText = "Tambah Pemain Baru";
+                document.getElementById('player-form').reset();
+                document.getElementById('form-id').value = '';
+                document.getElementById('form-domisili').value = 'Kab. Kediri';
+                btnDelete.classList.add('hidden');
+            }
+        }
+
+        window.closeModal = function() {
+            document.getElementById('modal-form').classList.add('hidden');
+            currentEditingId = null;
+        }
+
+        window.handleFormSubmit = async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save');
+            btn.innerText = "Menyimpan...";
+            btn.disabled = true;
+
+            const playerData = {
+                name: document.getElementById('form-name').value,
+                position: document.getElementById('form-position').value,
+                foot: document.getElementById('form-foot').value,
+                school: document.getElementById('form-school').value,
+                phone: document.getElementById('form-phone').value,
+                ttl: document.getElementById('form-ttl').value,
+                club: document.getElementById('form-club').value,
+                domisili: document.getElementById('form-domisili').value
+            };
+
+            try {
+                if (currentEditingId) {
+                    await updateDoc(doc(db, "players", currentEditingId), playerData);
+                } else {
+                    await addDoc(collection(db, "players"), playerData);
+                }
+                closeModal();
+                loadPlayers();
+            } catch (error) {
+                console.error("Error saving:", error);
+                alert("Gagal menyimpan data.");
+            } finally {
+                btn.innerText = "Simpan";
+                btn.disabled = false;
+            }
+        }
+
+        window.deletePlayerFromModal = async function() {
+            if (currentEditingId && confirm("Yakin ingin menghapus pemain ini dari database?")) {
+                try {
+                    await deleteDoc(doc(db, "players", currentEditingId));
+                    closeModal();
+                    loadPlayers();
+                } catch (error) {
+                    console.error("Error deleting:", error);
+                    alert("Gagal menghapus data.");
+                }
+            }
+        }
+    </script>
+</body>
+</html>
