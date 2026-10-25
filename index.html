@@ -6,6 +6,8 @@
     <title>Pemain Lolos Seleksi - Ponprov Kab Kediri 2026</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS (xlsx) untuk Export & Import Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-3 md:p-8 font-sans antialiased selection:bg-emerald-500 selection:text-slate-950">
 
@@ -13,18 +15,29 @@
         <!-- Header & Search -->
         <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl">
             <div>
-                <h1 class="text-base md:text-xl font-bold text-slate-100">Pemain Lolos Seleksi - Ponprov Kab Kediri 2026</h1>
-                <p class="text-xs text-slate-400">Database Real-time Firebase Firestore</p>
+                <h1 class="text-base md:text-xl font-bold text-slate-100">Pemain Lolos Seleksi</h1>
+                <p class="text-xs text-slate-400">Ponprov Kab Kediri 2026</p>
             </div>
             <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
-                <input type="text" id="search-input" oninput="filterData()" placeholder="Cari nama atau sekolah..." class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 w-full md:w-56 placeholder-slate-600">
-                <!-- Tombol Inject Data Otomatis -->
-                <button onclick="injectInitialData()" id="btn-inject" class="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded-xl text-xs transition shadow-md shadow-amber-900/40 shrink-0 hidden">
-                    🚀 Inject 46 Data Awal
+                <input type="text" id="search-input" oninput="filterData()" placeholder="Cari nama atau sekolah..." class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 w-full md:w-48 placeholder-slate-600">
+                
+                <!-- Tombol Export Excel -->
+                <button onclick="exportToExcel()" class="px-3.5 py-2.5 bg-sky-600 hover:bg-sky-500 text-slate-950 font-bold rounded-xl text-xs transition shadow-md shadow-sky-900/40 shrink-0 flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    <span>Export</span>
                 </button>
-                <button onclick="openModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold rounded-xl text-xs transition shadow-md shadow-emerald-900/40 shrink-0 flex items-center justify-center gap-1.5">
+
+                <!-- Tombol Import Excel -->
+                <label class="px-3.5 py-2.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded-xl text-xs transition shadow-md shadow-amber-900/40 shrink-0 flex items-center gap-1.5 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    <span>Import</span>
+                    <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" onchange="importFromExcel(event)" class="hidden">
+                </label>
+
+                <!-- Tombol Tambah Manual -->
+                <button onclick="openModal()" class="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold rounded-xl text-xs transition shadow-md shadow-emerald-900/40 shrink-0 flex items-center justify-center gap-1.5">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-                    <span>Tambah Pemain</span>
+                    <span>Tambah</span>
                 </button>
             </div>
         </div>
@@ -127,56 +140,6 @@
         let allPlayers = [];
         let currentEditingId = null;
 
-        // Dataset lengkap 46 pemain (15 Teks + 31 Excel)
-        const initialDataset = [
-            { name: "Ferdinan Abimayu", ttl: "-", school: "Kab. Kediri", phone: "0858-5920-4642", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Anchor" },
-            { name: "Ilham Maulana Ghifari", ttl: "-", school: "Kab. Kediri", phone: "0821-3906-3498", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Anchor" },
-            { name: "Tanjak Riski Wibowo", ttl: "-", school: "Kab. Kediri", phone: "0881-0367-26252", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
-            { name: "Muhtarom Fahri Fahrozi", ttl: "-", school: "Kab. Kediri", phone: "0821-7240-2940", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
-            { name: "Deo Galang Wira Kusma", ttl: "-", school: "Kab. Kediri", phone: "0857-3073-4995", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
-            { name: "Isshafa Rizki Darmawan", ttl: "-", school: "Kab. Kediri", phone: "0813-8781-6585", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
-            { name: "Fadil Ardiansyah Trigusma", ttl: "-", school: "Kab. Kediri", phone: "0812-3581-3911", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
-            { name: "Mahendra Ferdi Zafi", ttl: "-", school: "Kab. Kediri", phone: "0819-3980-3196", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
-            { name: "M. Iqbal Maulana", ttl: "-", school: "Kab. Kediri", phone: "0813-3567-0685", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
-            { name: "Josep Rahmat S.", ttl: "-", school: "Kab. Kediri", phone: "0878-3268-2966", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
-            { name: "Maulana Galih Ibrahim", ttl: "-", school: "Kab. Kediri", phone: "0856-5583-6202", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Pivot" },
-            { name: "Sultan Zaky", ttl: "-", school: "Kab. Kediri", phone: "0851-3600-6841", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Pivot" },
-            { name: "Krisna Agung W", ttl: "-", school: "Kab. Kediri", phone: "0857-5540-2710", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "GK" },
-            { name: "Keyta Alkausar", ttl: "-", school: "Kab. Kediri", phone: "0812-1645-9272", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "GK" },
-            { name: "Azka Rizqiansyah Hidayat", ttl: "-", school: "Kab. Kediri", phone: "0813-3058-082", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "GK" },
-            { name: "ZADA JANUAR PUTRA", ttl: "-", school: "SMKN 1 NGASEM", phone: "087830090638", foot: "Right", club: "Joker SM", domisili: "Kab. Kediri", position: "Flank" },
-            { name: "ADIKA DINARTHA CAKRANEGARA", ttl: "-", school: "SMAN 1 PARE", phone: "082337120300", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Pivot" },
-            { name: "WIJDAAN ABIYASA SATYA NAGARA", ttl: "-", school: "MAN 4 KEDIRI", phone: "085731254164", foot: "Right", club: "Joker", domisili: "Kab. Kediri", position: "Anchor" },
-            { name: "MUHAMMAD NUR HASAN", ttl: "-", school: "SMAN 1 NGASEM", phone: "085708077563", foot: "Right", club: "Seventeen", domisili: "Kab. Kediri", position: "Flank" },
-            { name: "MUHAMMAD ADLY RAMADAN", ttl: "-", school: "MTS NEGERI 1 KEDIRI", phone: "082333477873", foot: "Right", club: ".", domisili: "Kab. Kediri", position: "Anchor" },
-            { name: "VASANTA KUSUMAKARA", ttl: "-", school: "SMAN 1 PAPAR", phone: "083151065298", foot: "Left", club: "-", domisili: "Kab. Kediri", position: "Flank" },
-            { name: "SATRIA AGHA HAMIZAN IFTIKHAR", ttl: "-", school: "SMAN 1 PARE", phone: "085857585739", foot: "Right", club: "RD FARM FC", domisili: "Kab. Kediri", position: "GK" },
-            { name: "Alfathan Julio Putra Wahyudi", ttl: "-", school: "SMAN 1 PARE", phone: "0881036483488", foot: "Right", club: "RD Farm", domisili: "Kab. Kediri", position: "Pivot" },
-            { name: "Fawwas Akbar Azaidan", ttl: "-", school: "SMAN 1 GURAH", phone: "082115843263", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Pivot" },
-            { name: "Muhammad dafif daris", ttl: "-", school: "-", phone: "082139036699", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "GK" },
-            { name: "GASTONI VIKYAN WIDA SAPUTRA", ttl: "-", school: "SMAN 1 NGADILUWIH", phone: "085123736141", foot: "Right", club: "SEVENTIN", domisili: "Kab. Kediri", position: "Flank" },
-            { name: "Bagaswara laksana prabu", ttl: "-", school: "Sman1ngadiluwih", phone: "085852843525", foot: "Right", club: "Seventeen", domisili: "Kab. Kediri", position: "Pivot" },
-            { name: "MUHAMMAD BADRUDIN", ttl: "-", school: "SMAN 1 PLEMAHAN", phone: "085707361049", foot: "Right", club: "BBB FA", domisili: "Kab. Kediri", position: "Flank" },
-            { name: "ARSAVIN ANDRA PRATAMA", ttl: "-", school: "SMA NEGERI 1 PLEMAHAN", phone: "085707166012", foot: "Right", club: "Volcanoes", domisili: "Kab. Kediri", position: "GK" },
-            { name: "MUHAMMAD AZZAKY KEISHA PRATAMA", ttl: "-", school: "SMPN 1 GROGOL", phone: "085649759598", foot: "Right", club: "Sedulu FA", domisili: "Kab. Kediri", position: "Anchor" },
-            { name: "RAEHAN OKTA SAPUTRA", ttl: "-", school: "SMAN 6 KOTA KEDIRI", phone: "085770733563", foot: "Right", club: "Anak Manis", domisili: "Kab. Kediri", position: "Flank" },
-            { name: "ALVINO", ttl: "-", school: "SMA NEGRI 1 PAPAR", phone: "081548725910", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
-            { name: "DIMAS SATRIA WINATA", ttl: "-", school: "SMA NEGERI 1 GURAH", phone: "082231124792", foot: "Right", club: "Anak Manis", domisili: "Kab. Kediri", position: "Anchor" },
-            { name: "ALDI WAHYU SAPUTRA", ttl: "-", school: "MAN4KEDIRI", phone: "085746486351", foot: "Right", club: "PARAMONY", domisili: "Kab. Kediri", position: "Pivot" },
-            { name: "HAIKAL ALIF FIRMANSYAH", ttl: "-", school: "SMAN 1 PLEMAHAN", phone: "085856545632", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
-            { name: "Josheep Valentino Kurnia Putra Ngara", ttl: "-", school: "SMAN 1 GURAH", phone: "087849707769", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
-            { name: "Syafi' sadidaturrahman", ttl: "-", school: "SMA 1 PARE", phone: "087849707769", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Pivot" },
-            { name: "WAHYUISA TRYSANCA", ttl: "-", school: "SMAN 6 KEDIRI", phone: "085236711173", foot: "Right", club: "Joker Sm", domisili: "Kab. Kediri", position: "Anchor" },
-            { name: "BAIHAQI KHAIZAN", ttl: "-", school: "SMAN 1 PARE", phone: "082143360411", foot: "Right", club: "PARAMONY FA", domisili: "Kab. Kediri", position: "Anchor" },
-            { name: "Muhammad Syaifun Nadif", ttl: "-", school: "SMAN 1 SRENGAT", phone: "08133057504", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
-            { name: "radhitya agastha putra arandri", ttl: "-", school: "sman 1 pare", phone: "082245806151", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Anchor" },
-            { name: "MUHAMMAD ILMAN ZUHRI ZULQARNAIN", ttl: "-", school: "MAN 4 KEDIRI", phone: "085790656812", foot: "Right", club: "payung", domisili: "Kab. Kediri", position: "Pivot" },
-            { name: "RAKA BAGAS PAKUSADEWA", ttl: "-", school: "SMA NEGERI 1 PARE", phone: "085707281107", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Flank" },
-            { name: "AHMAD DICKY ERFIANDI", ttl: "-", school: "SMAN 1 GURAH", phone: "085850168875", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Anchor" },
-            { name: "Muhammad Ridwan", ttl: "-", school: "SMAN 1 GURAH", phone: "085730030972", foot: "Right", club: "Payung", domisili: "Kab. Kediri", position: "Flank" },
-            { name: "Aufa Denis", ttl: "-", school: "-", phone: "088991792467", foot: "Right", club: "-", domisili: "Kab. Kediri", position: "Pivot" }
-        ];
-
         window.onload = function() {
             loadPlayers();
         };
@@ -189,46 +152,19 @@
                 querySnapshot.forEach((docSnap) => {
                     allPlayers.push({ id: docSnap.id, ...docSnap.data() });
                 });
-
-                if (allPlayers.length === 0) {
-                    document.getElementById('btn-inject').classList.remove('hidden');
-                } else {
-                    document.getElementById('btn-inject').classList.add('hidden');
-                }
-
                 renderTables(allPlayers);
             } catch (error) {
                 console.error("Error loading data: ", error);
-                document.getElementById('loading-text').innerText = "Gagal memuat data. Periksa koneksi internet / Firebase rules.";
+                document.getElementById('loading-text').innerText = "Gagal memuat data. Periksa aturan Firebase rules.";
             }
         }
-
-        window.injectInitialData = async function() {
-            if (!confirm("Yakin ingin meng-inject 46 data awal ke Firebase Firestore?")) return;
-            const btn = document.getElementById('btn-inject');
-            btn.innerText = "Meng-inject...";
-            btn.disabled = true;
-
-            try {
-                for (let player of initialDataset) {
-                    await addDoc(collection(db, "players"), player);
-                }
-                alert("Berhasil meng-inject 46 data pemain ke Firebase!");
-                loadPlayers();
-            } catch (error) {
-                console.error("Error injecting data:", error);
-                alert("Gagal meng-inject data.");
-                btn.innerText = "🚀 Inject 46 Data Awal";
-                btn.disabled = false;
-            }
-        };
 
         function renderTables(data) {
             const container = document.getElementById('table-container');
             container.innerHTML = '';
 
             if (data.length === 0) {
-                container.innerHTML = `<p class="text-center text-slate-500 text-sm py-12">Belum ada data pemain. Klik tombol <b>"Inject 46 Data Awal"</b> di atas atau tambah manual.</p>`;
+                container.innerHTML = `<p class="text-center text-slate-500 text-sm py-12">Belum ada data pemain. Silakan klik tombol <b>"Import"</b> untuk unggah file Excel atau <b>"Tambah"</b> manual.</p>`;
                 return;
             }
 
@@ -292,6 +228,83 @@
             const filtered = allPlayers.filter(p => p.name.toLowerCase().includes(query) || p.school.toLowerCase().includes(query) || (p.domisili && p.domisili.toLowerCase().includes(query)));
             renderTables(filtered);
         }
+
+        // Fitur Export ke Excel
+        window.exportToExcel = function() {
+            if (allPlayers.length === 0) {
+                alert("Tidak ada data untuk diexport!");
+                return;
+            }
+            let dataExport = allPlayers.map((p, idx) => ({
+                No: idx + 1,
+                Nama: p.name,
+                TTL: p.ttl || "-",
+                "Asal Sekolah": p.school || "-",
+                "No. HP": p.phone || "-",
+                "Strongest Foot": p.foot || "Right",
+                Klub: p.club || "-",
+                Domisili: p.domisili || "Kab. Kediri",
+                Posisi: p.position || "Flank"
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(dataExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Data Pemain Lolos");
+            XLSX.writeFile(workbook, "Data_Pemain_Ponprov_Kab_Kediri.xlsx");
+        };
+
+        // Fitur Import dari Excel ke Firebase
+        window.importFromExcel = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                    if (jsonData.length === 0) {
+                        alert("File Excel kosong atau format tidak sesuai!");
+                        return;
+                    }
+
+                    if (!confirm(`Ditemukan ${jsonData.length} baris data dari Excel. Ingin mengimpornya ke Firebase?`)) {
+                        event.target.value = '';
+                        return;
+                    }
+
+                    document.getElementById('loading-text').innerText = "Mengimpor data ke Firebase...";
+
+                    for (let row of jsonData) {
+                        // Sesuaikan dengan nama kolom di Excel Anda
+                        let playerObj = {
+                            name: row["Nama"] || row["nama"] || row["NAME"] || "Tanpa Nama",
+                            ttl: row["TTL"] || row["ttl"] || "-",
+                            school: row["Asal Sekolah"] || row["asal sekolah"] || row["School"] || "-",
+                            phone: String(row["No. HP"] || row["no hp"] || row["Phone"] || "-"),
+                            foot: row["Strongest Foot"] || row["foot"] || "Right",
+                            club: row["Klub"] || row["klub"] || row["Club"] || "-",
+                            domisili: row["Domisili"] || row["domisili"] || "Kab. Kediri",
+                            position: row["Posisi"] || row["posisi"] || row["Position"] || "Flank"
+                        };
+                        await addDoc(collection(db, "players"), playerObj);
+                    }
+
+                    alert("Berhasil mengimpor data dari Excel ke Firebase!");
+                    event.target.value = '';
+                    loadPlayers();
+                } catch (error) {
+                    console.error("Gagal import excel:", error);
+                    alert("Terjadi kesalahan saat membaca file Excel.");
+                    event.target.value = '';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        };
 
         window.openModal = function(id = null) {
             document.getElementById('modal-form').classList.remove('hidden');
