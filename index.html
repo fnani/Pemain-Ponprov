@@ -109,7 +109,7 @@
     <!-- Script Firebase & Logika Aplikasi -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBcJlrKRDxd7pqOk_SDra89cGdvPCFtiu4",
@@ -190,7 +190,6 @@
                     allPlayers.push({ id: docSnap.id, ...docSnap.data() });
                 });
 
-                // Jika database kosong, tampilkan tombol inject
                 if (allPlayers.length === 0) {
                     document.getElementById('btn-inject').classList.remove('hidden');
                 } else {
@@ -204,7 +203,6 @@
             }
         }
 
-        // Fungsi Tombol Inject Data Otomatis ke Firestore
         window.injectInitialData = async function() {
             if (!confirm("Yakin ingin meng-inject 46 data awal ke Firebase Firestore?")) return;
             const btn = document.getElementById('btn-inject');
